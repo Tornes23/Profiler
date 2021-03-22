@@ -30,6 +30,7 @@ class Profiler
 		unsigned mCallCount = 0;
 		unsigned long long mMinTime = std::numeric_limits<unsigned long long>::max();
 		unsigned long long mMaxTime = 0;
+		bool mbLeft = false;
 
 	};
 
@@ -48,6 +49,7 @@ private:
 	void UpdateCurrent(Node* newNode);
 	Node* NewNode(Node* parent, const char* id, unsigned long long time);
 	Node* mCurrent = nullptr;
+	Node* mPrev = nullptr;
 	Node* mTree = nullptr;
 	bool mbLeft = false;
 };

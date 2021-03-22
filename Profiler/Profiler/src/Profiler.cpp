@@ -23,8 +23,6 @@ void Profiler::Leave()
 
 void Profiler::Enter(unsigned long long timestamp, const char* id)
 {
-	mbLeft = false;
-
 	if (mTree == nullptr) { mTree = NewNode(nullptr, id, timestamp); mCurrent = mTree; return; }
 
 	if (mCurrent->mID == id) { mCurrent->mRecursion++; return; }
@@ -37,25 +35,26 @@ void Profiler::Enter(unsigned long long timestamp, const char* id)
 
 	Node* node = NewNode(mCurrent, id, timestamp);
 
-	if (mbLeft)
+	if (mPrev != nullptr && mPrev->mbLeft)
 		mCurrent->mSibling = node;
 	else
 		mCurrent->mChild = node;
 
+	mPrev = mCurrent;
 	mCurrent = node;
 
 }
 
 void Profiler::Leave(unsigned long long timestamp)
 {
-	mbLeft = true;
-
 	if (mCurrent->mRecursion > 0) { mCurrent->mRecursion--; return; }
 
 	unsigned long long time = mCurrent->mStartTime - timestamp;
 	if (time < mCurrent->mMinTime) mCurrent->mMinTime = time;
 	if (time > mCurrent->mMaxTime) mCurrent->mMaxTime = time;
 	mCurrent->mTotal = time;
+	mCurrent->mbLeft = true;
+	mPrev = mCurrent;
 	mCurrent = mCurrent->mParent;
 }
 
