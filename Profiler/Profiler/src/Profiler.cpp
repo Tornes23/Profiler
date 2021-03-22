@@ -1,24 +1,63 @@
 #include <intrin.h>
 #include "Profiler.h"
 
-Profiler::Profiler(const char* id)
-{
-	Enter(__rdtsc(), id);
-}
-
 Profiler::~Profiler()
 {
-	Leave(__rdtsc());
+	if (mbProfile)
+		Leave(__rdtsc());
+
+	Delete(mTree);
+	mPrev = nullptr;
+	mCurrent = nullptr;
+	mTree = nullptr;
 }
 
 void Profiler::Enter(const char* id)
 {
-	Enter(__rdtsc(), id);
+	if(mbProfile)
+		Enter(__rdtsc(), id);
 }
 
 void Profiler::Leave()
 {
-	Leave(__rdtsc());
+	if (mbProfile)
+		Leave(__rdtsc());
+}
+
+void Profiler::StartFrame()
+{
+	if (mFramesToCheck < mFrameCount)
+		mbProfile = false;
+
+	Reset(mTree);
+}
+
+void Profiler::EndFrame()
+{
+	mFrameCount++;
+
+	//render imgui
+	//dump stats to log
+	Print();
+}
+
+void Profiler::Switch() { mbProfile = !mbProfile; }
+
+void Profiler::Print()
+{
+	std::ofstream file;
+
+	file.open("ProfilerStats.txt");
+
+	if (file.is_open())
+	{
+		//frame header
+		file << "Frame Number: " << mFrameCount << "\n";
+		//recursive print in the log
+		PrintNode(mTree, file);
+
+		file.close();
+	}
 }
 
 void Profiler::Enter(unsigned long long timestamp, const char* id)
@@ -58,7 +97,7 @@ void Profiler::Leave(unsigned long long timestamp)
 	mCurrent = mCurrent->mParent;
 }
 
-Profiler::Node* Profiler::NewNode(Node* parent, const char* id, unsigned long long time)
+Node* Profiler::NewNode(Node* parent, const char* id, unsigned long long time)
 {
 	return new Node(parent, id, time);
 }
@@ -76,9 +115,67 @@ void Profiler::Find(Node* node, const char* id, Node** found)
 
 }
 
+void Profiler::Reset(Node* node)
+{
+	if (node == nullptr)
+		return;
+
+	node->Reset();
+	Reset(node->mChild);
+	Reset(node->mSibling);
+}
+
+void Profiler::Delete(Node* node)
+{
+	if (node == nullptr)
+		return;
+
+	Delete(node->mChild);
+	Delete(node->mSibling);
+
+	delete node;
+	node = nullptr;
+}
+
+void Profiler::PrintNode(Node* node, std::ofstream& file)
+{
+	if (node == nullptr)
+		return;
+
+	file << node;
+
+	PrintNode(node->mChild, file);
+	PrintNode(node->mSibling, file);
+
+}
+
 void Profiler::UpdateCurrent(Node* newNode)
 {
 	mCurrent = newNode;
 	mCurrent->mCallCount++;
 	mCurrent->mStartTime = __rdtsc();
+}
+
+void Node::Reset()
+{
+	mRecursion = 0;
+	mTotal = 0;
+	mStartTime = 0;
+	mCallCount = 0;
+	mMinTime = std::numeric_limits<unsigned long long>::max();
+	mMaxTime = 0;
+	mbLeft = false;
+}
+
+std::ostream& operator<<(std::ostream& os, const Node* node)
+{
+	os << "------------------------------------------------\n";
+	os << "Function Name: " << node->mID<< "\n";
+	os << "Recursion Call Count: " << node->mRecursion<< "\n";
+	os << "Total Time In Function: " << node->mTotal<< "\n";
+	os << "Total Function Call Count: " << node->mCallCount<< "\n";
+	os << "Minimum Time In Function: " << node->mMinTime<< "\n";
+	os << "Maximum Time In Function: " << node->mMaxTime<< "\n";
+
+	return os;
 }

@@ -27,7 +27,9 @@ int main(void)
 	Prof.Enter("main");
 	Dummy();
 	Dummy3();
+	Dummy2();
+	Dummy2();
 
-	std::cout << "Lel\n";
+	Prof.Print();
 	return 0;
 }
