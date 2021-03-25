@@ -1,5 +1,11 @@
 #pragma once
+//TO REMOVE
+#define PROFILER_ON
+#define IMGUI_ON
+
+#if defined(PROFILER_ON)
 #include <limits>
+#include <vector>
 #include <string>
 #include <fstream>
 
@@ -20,8 +26,7 @@ struct Node
 	Node(Node* parent, const char* id, unsigned long long time) : mParent(parent), mID(id), mStartTime(time) {}
 	void Reset();
 	Node* mParent = nullptr;
-	Node* mChild = nullptr;
-	Node* mSibling = nullptr;
+	std::vector<Node*> mChilds;
 	const char* mID;
 	unsigned mRecursion = 0;
 	unsigned long long mTotal = 0;
@@ -31,9 +36,15 @@ struct Node
 	unsigned long long mMaxTime = 0;
 	bool mbLeft = false;
 
-	//overload of << operators
+	//overload of << operators for file output
 	friend std::ostream& operator<<(std::ostream& os, const Node* node);
 
+};
+
+struct ProfileThis
+{
+	ProfileThis(const char* id = "DefaultName");
+	~ProfileThis();
 };
 
 class Profiler
@@ -43,12 +54,15 @@ class Profiler
 public:
 
 	~Profiler();
-	void Enter(const char* id);
+	void Enter(const char* id = "DefaultName");
 	void Leave();
 	void StartFrame();
 	void EndFrame();
-	void Switch();
-	void Print();
+	void Activate(bool toSet);
+	void ActivateGUI(bool toSet);
+	void PrintLog(const char* filename = "ProfilerLog.txt");
+	void ShowGUI();
+	bool IsActive() const;
 
 private:
 
@@ -67,6 +81,28 @@ private:
 	unsigned long long mFrameCount = 1;
 	unsigned long long mFramesToCheck = 1;
 	bool mbProfile = true;
+	bool mbRenderGUI = true;
 };
 
-#define Prof Profiler::Instance()
+
+//macros to use the profiler
+#define PROFILE(X)		  ProfileThis(X);
+#define PROFILER_ENTER(X) Profiler::Instance().Enter(X);
+#define PROFILER_LEAVE	  Profiler::Instance().Leave();
+#define PRINT_LOG(X)      Profiler::Instance().PrintLog(X); 
+
+#else// PROFILER_OFF
+
+#define PROFILE(X)			  
+#define PROFILER_ENTER(X) 
+#define PROFILER_LEAVE  
+#define PRINT_LOG(X)  
+
+#endif
+
+#if defined(PROFILER_ON) && defined(IMGUI_ON)
+//macro to use ImGUI
+#define RENDERGUI Profiler::Instance().ShowGUI();
+#else// IMGUI_OFF
+#define RENDERGUI ;
+#endif

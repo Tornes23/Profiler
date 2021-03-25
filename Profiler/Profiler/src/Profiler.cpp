@@ -14,8 +14,7 @@ Profiler::~Profiler()
 
 void Profiler::Enter(const char* id)
 {
-	if(mbProfile)
-		Enter(__rdtsc(), id);
+	if (mbProfile) Enter(__rdtsc(), id);
 }
 
 void Profiler::Leave()
@@ -36,18 +35,19 @@ void Profiler::EndFrame()
 {
 	mFrameCount++;
 
-	//render imgui
 	//dump stats to log
-	Print();
+	PrintLog("ProfilerLog.txt");
 }
 
-void Profiler::Switch() { mbProfile = !mbProfile; }
+void Profiler::Activate(bool toSet) { mbProfile = toSet; }
 
-void Profiler::Print()
+void Profiler::ActivateGUI(bool toSet) { mbRenderGUI = toSet; }
+
+void Profiler::PrintLog(const char* filename)
 {
 	std::ofstream file;
 
-	file.open("ProfilerStats.txt");
+	file.open(filename);
 
 	if (file.is_open())
 	{
@@ -60,6 +60,16 @@ void Profiler::Print()
 	}
 }
 
+void Profiler::ShowGUI()
+{
+	if (!mbRenderGUI)
+		return;
+
+
+}
+
+bool Profiler::IsActive() const { return mbProfile; }
+
 void Profiler::Enter(unsigned long long timestamp, const char* id)
 {
 	if (mTree == nullptr) { mTree = NewNode(nullptr, id, timestamp); mCurrent = mTree; return; }
@@ -67,9 +77,9 @@ void Profiler::Enter(unsigned long long timestamp, const char* id)
 	if (mCurrent->mID == id) { mCurrent->mRecursion++; return; }
 
 	Node* found = nullptr;
-	Find(mCurrent->mChild, id, &found);
+	Find(mTree->mChild, id, &found);
 	if (found != nullptr) { UpdateCurrent(found); return; }
-	Find(mCurrent->mSibling, id, &found);
+	Find(mTree->mSibling, id, &found);
 	if (found != nullptr) { UpdateCurrent(found); return; }
 
 	Node* node = NewNode(mCurrent, id, timestamp);
@@ -178,4 +188,16 @@ std::ostream& operator<<(std::ostream& os, const Node* node)
 	os << "Maximum Time In Function: " << node->mMaxTime<< "\n";
 
 	return os;
+}
+
+ProfileThis::ProfileThis(const char* id)
+{
+	if(Profiler::Instance().IsActive())
+		Profiler::Instance().Enter(id);
+}
+
+ProfileThis::~ProfileThis()
+{
+	if (Profiler::Instance().IsActive())
+		Profiler::Instance().Leave();
 }
