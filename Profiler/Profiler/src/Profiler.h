@@ -1,6 +1,4 @@
 #pragma once
-#define PROFILER_ON
-#define IMGUI_ON
 
 #if defined(PROFILER_ON)
 #include <limits>
@@ -90,14 +88,12 @@ private:
 #define PROFILE(X)			 
 #define PROFILER_LEAVE  
 #define PRINT_LOG(X)  
-#define START_FRAME()    
-#define END_FRAME(X)     
+#define START_FRAME    
+#define END_FRAME     
 
 #endif
 
 #if defined(PROFILER_ON) && defined(IMGUI_ON)
-//macros to use ImGUI
-#define GUIPATH   //insert here the include path for ImGui
 #define RENDERGUI ProfilerSystem::Instance().ShowGUI();
 #else// IMGUI_OFF
 #define GUIPATH   

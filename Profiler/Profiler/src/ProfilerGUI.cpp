@@ -1,7 +1,8 @@
-#include "Profiler.h"
+#define PROFILER_ON
+#define IMGUI_ON
 
-#ifdef IMGUI_ON
-#include GUIPATH
+#include "Profiler.h"
+#include //include the path to your ImGui Library
 
 void ProfilerSystem::NodeGUI(Node* node)
 {

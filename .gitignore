@@ -10,3 +10,11 @@ Profiler/Profiler/Profiler.vcxproj.user
 Profiler/Profiler/ProfilerStats.txt
 
 *.txt
+
+Profiler/Debug/
+
+Profiler/Release/
+
+Profiler/Profiler/Debug/
+
+Profiler/Profiler/Release/

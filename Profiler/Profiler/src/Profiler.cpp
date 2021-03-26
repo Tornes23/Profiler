@@ -1,5 +1,5 @@
+#define PROFILER_ON
 #include "Profiler.h"
-#ifdef PROFILER_ON
 #include <intrin.h>
 
 ProfilerSystem::~ProfilerSystem()
@@ -183,4 +183,3 @@ std::ostream& operator<<(std::ostream& os, const Node* node)
 
 	return os;
 }
-#endif
