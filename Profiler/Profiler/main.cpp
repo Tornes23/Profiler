@@ -33,6 +33,8 @@ int main(void)
 {
 	PROFILE("main")
 
+		auto& test = ProfilerSystem::Instance();
+
 	Dummy();
 	Dummy2();
 	Dummy3();

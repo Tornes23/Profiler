@@ -1,8 +1,8 @@
+#ifdef PROFILER_ON
 #include <intrin.h>
 #include "Profiler.h"
-#include <IMGUI/imgui.h>
 
-Profiler::~Profiler()
+ProfilerSystem::~ProfilerSystem()
 {
 	if (mbProfile)
 		Leave(__rdtsc());
@@ -12,25 +12,26 @@ Profiler::~Profiler()
 	mTree = nullptr;
 }
 
-void Profiler::Enter(const char* id)
+void ProfilerSystem::Enter(const char* id)
 {
 	if (mbProfile) Enter(__rdtsc(), id);
 }
 
-void Profiler::Leave()
+void ProfilerSystem::Leave()
 {
 	if (mbProfile) Leave(__rdtsc());
 }
 
-void Profiler::StartFrame()
+void ProfilerSystem::StartFrame()
 {
-	if (mFramesToCheck > 0 && mFramesToCheck <= mFrameCount)
+	if (mbLimitFrames && mFramesToCheck <= mFrameCount)
 		mbProfile = false;
 
-	Reset(mTree);
+	if(mbProfile)
+		Reset(mTree);
 }
 
-void Profiler::EndFrame()
+void ProfilerSystem::EndFrame()
 {
 	mFrameCount++;
 
@@ -38,103 +39,65 @@ void Profiler::EndFrame()
 		PrintLog(mFilename);
 }
 
-void Profiler::Activate(bool toSet) { mbProfile = toSet; }
+void ProfilerSystem::Activate(bool toSet) { mbProfile = toSet; }
 
-void Profiler::PrintLog(const char* filename)
+void ProfilerSystem::PrintLog(const char* filename)
 {
 	std::ofstream file;
 
-	file.open(filename);
+	if(!mbLimitFrames)
+		file.open(filename, std::ofstream::app);
+	else
+		file.open(filename);
+
 
 	if (file.is_open())
 	{
 		//frame header
+		file << "******************************************\n";
 		file << "Frame Number: " << mFrameCount << "\n";
 		//recursive print in the log
 		PrintNode(mTree, file);
+
+		file << "Frame Ended\n";
+		file << "******************************************\n";
 
 		file.close();
 	}
 }
 
-void Profiler::ShowGUI()
-{
-	if (!ImGui::Begin("Profiler"))
-	{
-		// Early out if the window is collapsed, as an optimization.
-		ImGui::End();
-		return;
-	}
-	
-	std::string name(mFilename);
+bool ProfilerSystem::IsActive() const { return mbProfile; }
 
-	ImGui::Checkbox("Profiler Active", &mbProfile);
-	ImGui::Checkbox("Create Log", &mbCreateLog);
-	//ImGui::InputText("Output File Name", const_cast<char*>(name.data()), 200); something wrong
-	//mFilename = name.data();
-	ImGui::SliderInt("Frames to profile", &mFramesToCheck, 0, 100000);
-
-	NodeGUI(mTree);
-
-	ImGui::End();
-}
-
-bool Profiler::IsActive() const { return mbProfile; }
-
-void Profiler::Enter(unsigned long long timestamp, const char* id)
+void ProfilerSystem::Enter(unsigned long long timestamp, const char* id)
 {
 	if (mTree == nullptr) { mTree = NewNode(nullptr, id, timestamp); mCurrent = mTree; return; }
 
 	if (mCurrent->mID == id) { mCurrent->mRecursion++; return; }
 
 	Node* found = nullptr;
-	if (Find(id, found)) { UpdateCurrent(found); return; }
+	if (Find(id, &found)) { UpdateCurrent(found, timestamp); return; }
 
 	Node* node = NewNode(mCurrent, id, timestamp);
 
+	mCurrent->mChilds.push_back(node);
 	mCurrent = node;
 }
 
-void Profiler::Leave(unsigned long long timestamp)
+void ProfilerSystem::Leave(unsigned long long timestamp)
 {
 	if (mCurrent->mRecursion > 0) { mCurrent->mRecursion--; return; }
 
 	unsigned long long time = mCurrent->mStartTime - timestamp;
-	if (time < mCurrent->mMinTime) mCurrent->mMinTime = time;
-	if (time > mCurrent->mMaxTime) mCurrent->mMaxTime = time;
 	mCurrent->mTotal += time;
 	mCurrent = mCurrent->mParent;
 }
 
-Node* Profiler::NewNode(Node* parent, const char* id, unsigned long long time)
+Node* ProfilerSystem::NewNode(Node* parent, const char* id, unsigned long long time)
 {
 	return new Node(parent, id, time);
 }
 
-void Profiler::NodeGUI(Node* node)
-{
-	if (node == nullptr) return;
-	
-	if (ImGui::TreeNode(node->mID))
-	{
-		ImGui::Text("Recursion Calls = %d",       node->mRecursion);
-		ImGui::Text("Total Calls Per Frame = %d", node->mCallCount);
-		ImGui::Text("Total Spent Time = %d",      node->mTotal);
-		ImGui::Text("Minimum Spent Time = %d",    node->mMinTime);
-		ImGui::Text("Maximum Spent Time= %d",     node->mMaxTime);
-
-		if (node->mChilds.empty()) return;
-		for (auto& it : node->mChilds)
-			NodeGUI(it);
-
-		ImGui::TreePop();
-	}
-
-
-
-}
-
-bool Profiler::Find(const char* id, Node* found)
+bool ProfilerSystem::Find(const char* id, Node** found)
 {
 	if (id == nullptr)
 		return false;
@@ -143,7 +106,7 @@ bool Profiler::Find(const char* id, Node* found)
 	{
 		if (it->mID == id)
 		{
-			found = it;
+			*found = it;
 			return true;
 		}
 	}
@@ -151,7 +114,7 @@ bool Profiler::Find(const char* id, Node* found)
 	return false;
 }
 
-void Profiler::Reset(Node* node)
+void ProfilerSystem::Reset(Node* node)
 {
 	if (node == nullptr)
 		return;
@@ -165,7 +128,7 @@ void Profiler::Reset(Node* node)
 		Reset(it);
 }
 
-void Profiler::Delete(Node* node)
+void ProfilerSystem::Delete(Node* node)
 {
 	if (node == nullptr)
 		return;
@@ -180,7 +143,7 @@ void Profiler::Delete(Node* node)
 	node = nullptr;
 }
 
-void Profiler::PrintNode(Node* node, std::ofstream& file)
+void ProfilerSystem::PrintNode(Node* node, std::ofstream& file)
 {
 	if (node == nullptr)
 		return;
@@ -195,11 +158,11 @@ void Profiler::PrintNode(Node* node, std::ofstream& file)
 
 }
 
-void Profiler::UpdateCurrent(Node* newNode)
+void ProfilerSystem::UpdateCurrent(Node* newNode, unsigned long long timestamp)
 {
 	mCurrent = newNode;
 	mCurrent->mCallCount++;
-	mCurrent->mStartTime = __rdtsc();
+	mCurrent->mStartTime = timestamp;
 }
 
 void Node::Reset()
@@ -208,8 +171,6 @@ void Node::Reset()
 	mTotal = 0;
 	mStartTime = 0;
 	mCallCount = 0;
-	mMinTime = std::numeric_limits<unsigned long long>::max();
-	mMaxTime = 0;
 }
 
 std::ostream& operator<<(std::ostream& os, const Node* node)
@@ -219,8 +180,58 @@ std::ostream& operator<<(std::ostream& os, const Node* node)
 	os << "Recursion Call Count: " << node->mRecursion<< "\n";
 	os << "Total Time In Function: " << node->mTotal<< "\n";
 	os << "Total Function Call Count: " << node->mCallCount<< "\n";
-	os << "Minimum Time In Function: " << node->mMinTime<< "\n";
-	os << "Maximum Time In Function: " << node->mMaxTime<< "\n";
 
 	return os;
 }
+#endif
+
+#ifdef IMGUI_ON
+
+void ProfilerSystem::NodeGUI(Node* node)
+{
+	if (node == nullptr) return;
+
+	if (ImGui::TreeNode(node->mID))
+	{
+		std::string text = "Recursion Calls = ";
+		text += std::to_string(node->mRecursion);
+		ImGui::Text(text.data());
+
+		text = "Total Calls Per Frame = ";
+		text += std::to_string(node->mCallCount);
+		ImGui::Text(text.data());
+
+		text = "Total Spent Time = ";
+		text += std::to_string(node->mTotal);
+		ImGui::Text(text.data());
+
+		if (node->mChilds.empty()) { ImGui::TreePop(); return; }
+
+		for (auto& it : node->mChilds)
+			NodeGUI(it);
+
+		ImGui::TreePop();
+	}
+}
+
+void ProfilerSystem::ShowGUI()
+{
+	if (!ImGui::Begin("Profiler"))
+	{
+		// Early out if the window is collapsed, as an optimization.
+		ImGui::End();
+		return;
+	}
+
+	ImGui::Checkbox("Profiler Active", &mbProfile);
+	ImGui::Checkbox("Create Log", &mbCreateLog);
+	ImGui::Checkbox("Profile Limited Frames", &mbLimitFrames);
+	ImGui::InputText("Output File Name", mFilename, 100);
+	ImGui::DragInt("Frames to profile", &mFramesToCheck, 1, 1, 1000);
+
+	NodeGUI(mTree);
+
+	ImGui::End();
+}
+
+#endif // IMGUI_ON
