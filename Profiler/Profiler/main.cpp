@@ -5,11 +5,12 @@
 void Dummy()
 {
 	PROFILE("Dummy")
+	PROFILER_LEAVE
 }
 
 void Dummy2()
 {
-	PROFILER_ENTER("Dummy2")
+	PROFILE("Dummy2")
 	Dummy();
 	PROFILER_LEAVE
 }
@@ -17,11 +18,12 @@ void Dummy2()
 void Dummy3()
 {
 	PROFILE("Dummy3")
+	PROFILER_LEAVE
 }
 
 void Dummy4()
 {
-	PROFILER_ENTER("Dummy4")
+	PROFILE("Dummy4")
 	PROFILER_LEAVE
 }
 
@@ -30,7 +32,7 @@ void Dummy4()
 int main(void)
 {
 	PROFILE("main")
-	
+
 	Dummy();
 	Dummy2();
 	Dummy3();

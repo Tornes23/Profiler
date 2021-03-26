@@ -8,3 +8,5 @@ Profiler/Profiler/x64/
 Profiler/Profiler/Profiler.vcxproj.user
 
 Profiler/Profiler/ProfilerStats.txt
+
+*.txt

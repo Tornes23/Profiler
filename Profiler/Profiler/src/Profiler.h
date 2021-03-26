@@ -1,5 +1,4 @@
 #pragma once
-//TO REMOVE
 #define PROFILER_ON
 #define IMGUI_ON
 
@@ -34,17 +33,10 @@ struct Node
 	unsigned mCallCount = 1;
 	unsigned long long mMinTime = std::numeric_limits<unsigned long long>::max();
 	unsigned long long mMaxTime = 0;
-	bool mbLeft = false;
 
 	//overload of << operators for file output
 	friend std::ostream& operator<<(std::ostream& os, const Node* node);
 
-};
-
-struct ProfileThis
-{
-	ProfileThis(const char* id = "DefaultName");
-	~ProfileThis();
 };
 
 class Profiler
@@ -68,35 +60,37 @@ private:
 
 	void Enter(unsigned long long timestamp, const char* id);
 	void Leave(unsigned long long timestamp);
-	void Find(Node* node, const char* id, Node** found);
+	bool Find(const char* id, Node* found);
 	void Reset(Node* node);
 	void Delete(Node* node);
 	void PrintNode(Node* node, std::ofstream& file);
 	void UpdateCurrent(Node* newNode);
 	Node* NewNode(Node* parent, const char* id, unsigned long long time);
+	void NodeGUI(Node* node);
 	Node* mCurrent = nullptr;
-	Node* mPrev = nullptr;
 	Node* mTree = nullptr;
-	bool mbLeft = false;
-	unsigned long long mFrameCount = 1;
-	unsigned long long mFramesToCheck = 1;
+	int mFrameCount = 0;
+	int mFramesToCheck = 1;
 	bool mbProfile = true;
-	bool mbRenderGUI = true;
+	bool mbCreateLog = false;
+	const char* mFilename = "Profiler.txt";
 };
 
 
 //macros to use the profiler
-#define PROFILE(X)		  ProfileThis(X);
-#define PROFILER_ENTER(X) Profiler::Instance().Enter(X);
+#define PROFILE(X)		  Profiler::Instance().Enter(X);
 #define PROFILER_LEAVE	  Profiler::Instance().Leave();
 #define PRINT_LOG(X)      Profiler::Instance().PrintLog(X); 
+#define START_FRAME       Profiler::Instance().StartFrame(); 
+#define END_FRAME		  Profiler::Instance().EndFrame(); 
 
 #else// PROFILER_OFF
 
-#define PROFILE(X)			  
-#define PROFILER_ENTER(X) 
+#define PROFILE(X)			 
 #define PROFILER_LEAVE  
 #define PRINT_LOG(X)  
+#define START_FRAME()    
+#define END_FRAME(X)     
 
 #endif
 
