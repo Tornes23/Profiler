@@ -1,9 +1,20 @@
+/**
+* @file		 ProfilerGUI.cpp      
+* @author	 Nestor Uriarte,  nestor.uriarte@digipen.edu    
+* @date		 Fri Mar 26 16:16:45 2021          
+* @brief	 Contains the implementation of the imgui related functions for the profiler     
+* @copyright Copyright (C) 2020 DigiPen Institute of Technology .
+*/
 #define PROFILER_ON
 #define IMGUI_ON
 
 #include "Profiler.h"
 #include //include the path to your ImGui Library
 
+/**
+* @brief	The wrapping function for ImGui
+* @param	Node* node
+**/
 void ProfilerSystem::NodeGUI(Node* node)
 {
 	if (node == nullptr) return;
@@ -31,6 +42,9 @@ void ProfilerSystem::NodeGUI(Node* node)
 	}
 }
 
+/**
+* @brief	Renders the ImGui interface 
+**/
 void ProfilerSystem::ShowGUI()
 {
 	if (!ImGui::Begin("Profiler"))
@@ -50,5 +64,3 @@ void ProfilerSystem::ShowGUI()
 
 	ImGui::End();
 }
-
-#endif // IMGUI_ON

@@ -1,3 +1,10 @@
+/**
+* @file		 Profiler.h      
+* @author	 Nestor Uriarte,  nestoe.uriarte@digipen.edu    
+* @date		 Fri Mar 26 16:15:36 2021          
+* @brief	 Contains the definition of the ProfilerSystem class     
+* @copyright Copyright (C) 2020 DigiPen Institute of Technology .
+*/
 #pragma once
 
 #if defined(PROFILER_ON)
